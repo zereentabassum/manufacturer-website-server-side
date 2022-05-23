@@ -19,6 +19,13 @@ async function run(){
     try{
         await client.connect();
         const partCollection = client.db('manufacturer').collection('parts');
+
+        app.get('/parts', async(req, res) =>{
+          const query = {};
+          const cursor = partCollection.find(query);
+          const parts = await cursor.toArray();
+          res.send(parts);
+        })
     
 
     }
@@ -31,7 +38,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-  res.send('Hello World!')
+  res.send('Hello Computer!')
 })
 
 app.listen(port, () => {
