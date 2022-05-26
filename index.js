@@ -19,6 +19,12 @@ async function run(){
     try{
         await client.connect();
         const partCollection = client.db('manufacturer').collection('parts');
+        const orderCollection = client.db('manufacturer').collection('orders');
+        const userCollection = client.db('manufacturer').collection('users');
+
+
+
+
 
         app.get('/parts', async(req, res) =>{
           const query = {};
@@ -34,6 +40,33 @@ async function run(){
           res.send(part);
       })
 
+
+      app.put('/user/:email', async (req, res) => {
+        const email = req.params.email;
+        const user = req.body;
+        const filter = { email: email };
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: user,
+        };
+        const result = await userCollection.updateOne(filter, updateDoc, options);
+        // const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+        res.send(result);
+      });
+
+
+
+      app.post('/order', async(req, res) => {
+        const order = req.body;
+        // const query = {orderName:order.orderName, quantity:order.quantity, customer:order.customer};
+        // const exists = await orderCollection.findOne(query);
+        const result = await orderCollection.insertOne(order);
+        // sendOrderEmail(booking);
+        // console.log(result);
+         res.send(result);
+         
+
+      });
     
 
     }
