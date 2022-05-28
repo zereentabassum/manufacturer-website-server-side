@@ -19,11 +19,9 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 function verifyJWT(req, res, next) {
   const authHeader = req.headers.authorization;
- 
   if (!authHeader) {
     return res.status(401).send({ message: 'UnAuthorized access' });
   }
-
   const token = authHeader.split(' ')[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
     if (err) {
@@ -34,13 +32,13 @@ function verifyJWT(req, res, next) {
   });
 }
 
-
 async function run(){
     try{
         await client.connect();
         const partCollection = client.db('manufacturer').collection('parts');
         const orderCollection = client.db('manufacturer').collection('orders');
         const userCollection = client.db('manufacturer').collection('users');
+        const reviewCollection = client.db('manufacturer').collection('reviews');
 
 
 
@@ -60,11 +58,45 @@ async function run(){
           res.send(part);
       })
 
+      app.post('/parts', async(req, res) => {
+        const newPart = req.body;
+        const result = await partCollection.insertOne(newPart);
+        res.send(result);
+    });
 
-      app.get('/user', verifyJWT, async (req, res) => {
+
+      app.get('/user', async (req, res) => {
         const users = await userCollection.find().toArray();
         res.send(users);
       });
+
+      app.get('/admin/:email', async (req, res) => {
+        const email = req.params.email;
+        const user = await userCollection.findOne({ email: email });
+        const isAdmin = user.role === 'admin';
+        res.send({ admin: isAdmin })
+      })
+  
+
+      app.put('/user/admin/:email', async (req, res) => {
+        const email = req.params.email;
+        const requester = req.params.email;
+        const requesterAccount = await userCollection.findOne({email: requester})
+        // if(requesterAccount.role === 'admin'){
+          const filter = { email: email };
+          const options = { upsert: true };
+          const updateDoc = {
+            $set: {role: 'admin'},
+          };
+          const result = await userCollection.updateOne(filter, updateDoc, options);
+          res.send(result);
+        // }
+        // else(
+        //   res.status(403).send({message:'forbidden'})
+        // )
+      
+      });
+
 
       app.put('/user/:email', async (req, res) => {
         const email = req.params.email;
@@ -105,6 +137,32 @@ async function run(){
         // sendOrderEmail(booking);
         // console.log(result);
          res.send(result);
+
+         app.get('/reviews', async(req, res) =>{
+          const query = {};
+          const cursor = reviewCollection.find(query);
+          const reviews = await cursor.toArray();
+          res.send(reviews);
+        })
+        app.post('/reviews', async(req, res) => {
+          const newReview = req.body;
+          const result = await reviewCollection.insertOne(newReview);
+          res.send(result);
+      });
+  
+
+
+       
+      
+
+    //  DELETE
+      app.delete('/part/:_id', async(req, res) =>{
+          const _id = req.params._id;
+          const query = {_id: ObjectId(_id)};
+          const result = await partCollection.deleteOne(query);
+          res.send(result);
+      })
+  
          
 
       });
